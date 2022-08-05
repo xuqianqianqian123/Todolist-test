@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link href="./main.css" rel="stylesheet" />
+    <style>
+    body {
+	margin:0;
+	padding:0;
+	font-size:16px;
+	background: #CDCDCD;
+}
+header {
+	height:50px;
+	background:#333;
+	background:rgba(47,47,47,0.98);
+}
+section{
+	margin:0 auto;
+}
+label{
+	float:left;
+	width:100px;
+	line-height:50px;
+	color:#DDD;
+	font-size:24px;
+	cursor:pointer;
+	font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+header input{
+	float:right;
+	width:60%;
+	height:24px;
+	margin-top:12px;
+	text-indent:10px;
+	border-radius:5px;
+	box-shadow: 0 1px 0 rgba(255,255,255,0.24), 0 1px 6px rgba(0,0,0,0.45) inset;
+	border:none}
+input:focus{
+	outline-width:0
+}
+h2{
+	position:relative;
+}
+span{
+	position:absolute;
+	top:2px;
+	right:5px;
+	display:inline-block;
+	padding:0 5px;
+	height:20px;
+	border-radius:20px;
+	background:#E6E6FA;
+	line-height:22px;
+	text-align:center;
+	color:#666;
+	font-size:14px;
+}
+ol,ul{
+	padding:0;
+	list-style:none;
+}
+li input{
+	position:absolute;
+	top:2px;
+	left:10px;
+	width:22px;
+	height:22px;
+	cursor:pointer;
+}
+p{
+	margin: 0;
+	user-select: none;
+}
+li p input{
+	top:3px;
+	left:40px;
+	width:70%;
+	height:20px;
+	line-height:14px;
+	text-indent:5px;
+	font-size:14px;
+}
+li{
+	height:32px;
+	line-height:32px;
+	background: #fff;
+	position:relative;
+	margin-bottom: 10px;
+	padding:0 45px;
+	border-radius:3px;
+	border-left: 5px solid #629A9C;
+	box-shadow: 0 1px 2px rgba(0,0,0,0.07);
+}
+ol li{
+	cursor:move;
+}
+ul li{
+	border-left: 5px solid #999;
+	opacity: 0.5;
+}
+li a{
+	position:absolute;
+	top:2px;
+	right:5px;
+	display:inline-block;
+	width:14px;
+	height:12px;
+	border-radius:14px;
+	border:6px double #FFF;
+	background:#CCC;
+	line-height:14px;
+	text-align:center;
+	color:#FFF;
+	font-weight:bold;
+	font-size:14px;
+	cursor:pointer;
+}
+footer{
+	color:#666;
+	font-size:14px;
+	text-align:center;
+}
+footer a{
+	color:#666;
+	text-decoration:none;
+	color:#999;
+}
+@media screen and (max-device-width: 620px) {section{width:96%;padding:0 2%;}}
+@media screen and (min-width: 620px) {section{width:600px;padding:0 10px;}}
+    </style>
+  </head>
+  <body>
+    <header>
+      <section>
+        <div id="form">
+          <label for="title">ToDoList</label>
+          <input type="text" id="title" placeholder="添加ToDo" />
+        </div>
+      </section>
+    </header>
+    <section>
+      <h2>正在进行 <span id="todocount">0</span></h2>
+      <ol id="todolist" class="demo-box"></ol>
+      <h2>已经完成 <span id="donecount">0</span></h2>
+      <ul id="donelist"></ul>
+    </section>
+    <footer>Copyright © 2014 todolist.cn <a href="#">clear</a></footer>
+    <!-- <li draggable="true">
+        <input type="checkbox" onchange="update(0,&quot;done&quot;,true)">
+        <p id="p-0" onclick="edit(0)">asda</p>
+        <a href="javascript:remove(0)">-</a>
+    </li> -->
+    <script>
+      var title, todolist, donelist, todocount, donecount,prev;
+      var list = {
+        todolist: [],
+        donelist: []
+      };
+      init();
+      function init() {
+        title = document.querySelector("#title");
+        todolist = document.querySelector("#todolist");
+        donelist = document.querySelector("#donelist");
+        todocount = document.querySelector("#todocount");
+        donecount = document.querySelector("#donecount");
+        // 输入文本内容后，敲回车
+        document.addEventListener("keyup", keyHandler);
+        //修改在那个列表中
+        todolist.addEventListener("change", changeHandler);
+        //删除元素
+        todolist.addEventListener("click", clickHandler);
+        //修改显示input
+        todolist.addEventListener("dblclick", dblclickHandler);
+        //input失焦处理
+        todolist.addEventListener("focusout", blurHandler);
+		//修改在那个列表中
+        donelist.addEventListener("change", changeHandler);
+        //删除元素
+        donelist.addEventListener("click", clickHandler);
+       
+        // 初始化渲染（长期保存）
+        if (localStorage.list) {
+          // 将localStorage.list转换为对象并覆盖原来的list
+          list = JSON.parse(localStorage.list);
+          render();
+        }
+      }
+
+      function keyHandler(e) {
+        // title.value.trim().length===0 输入框内容为空
+        // 如果按下的键不是Enter，或者输入框内容为空时，跳出
+        if (e.keyCode !== 13 || title.value.trim().length === 0) return;
+        // 将输入框中的内容放入todolist
+        list.todolist.push(title.value);
+        // 将输入框清空
+        title.value = "";
+        // 渲染
+        render();
+      }
+
+      // 失焦
+      function blurHandler(e) {
+        
+        var index = Array.from(todolist.children).indexOf(
+          // e.target-->input
+          // e.target.parentElement.parentElement-->li
+          e.target.parentElement.parentElement
+        );
+        list.todolist[index] = e.target.value;
+        render();
+      }
+
+      // 点击多选框切换列表
+      function changeHandler(e) {
+        if (e.target.type !== "checkbox") return;
+        switchList(e.target, e.target.checked);
+      }
+
+      // 双击
+      function dblclickHandler(e) {
+        if (e.target.nodeName !== "P") return;
+        // input赋值为新的显示的输入框
+        var input=e.target.firstElementChild;
+        if(prev){
+            prev.style.display="none";
+        }
+        prev=input;
+        // 双击的输入框显示，其它的隐藏
+        input.style.display = "block";
+        // 让输入框里的内容为双击的文本内容
+        input.value = e.target.textContent;
+        //选中文本框内的字符串
+        input.setSelectionRange(0,input.value.length);
+        //聚焦
+        input.focus();
+      }
+
+      // 切换列表
+      function switchList(target, bool, remove) {
+        var arr = bool ? list.todolist : list.donelist;
+        var arr1 = bool ? list.donelist : list.todolist;
+        // 如果remove没有给值，target-->checkbox,elem为p标签，删除并添加给另一个列表
+        // 如果remove有值，target-->a,elem为p标签，只删除，不添加
+        var elem =
+          remove === undefined
+            ? target.nextElementSibling
+            : target.previousElementSibling;
+        var index = arr.indexOf(elem.textContent);
+        // 从下标index开始删除1个元素，并且返回这个被删除的元素组成的新数组
+        var del = arr.splice(index, 1);
+        if (remove === undefined) arr1.push(del[0]);
+        // 根据这个列表重新渲染todolist和donelist
+        render();
+      }
+
+      // 点击超链接，删除一行
+      function clickHandler(e) {
+        // 如果点击的节点名字不是超链接，跳出
+        if (e.target.nodeName !== "A") return;
+        switchList(
+          e.target,
+          !e.target.parentElement.firstElementChild.checked,
+          true
+        );
+      }
+
+      function render() {
+        // 把当前数据存到本地存储里面
+        localStorage.list = JSON.stringify(list);
+        // 遍历list
+        // list是一个对象，包含todolist和donelist
+        // 这两个key正好和ol以及ul的id是相同的
+        // 通过window[prop]可以获取到ol和ul
+        for (var prop in list) {
+          // 将li遍历存到ol和ul里面
+          // innerHTML:获取HTML当前标签的起始和结束里面的内容
+          window[prop].innerHTML = list[prop].reduce((value, item) => {
+            return (
+              value +
+              `
+                    <li>
+                        <input type="checkbox" ${
+                          prop === "donelist" ? "checked" : ""
+                        }>
+                        <p>${item}<input type="text" style="display:none"></p>
+                        <a href="javascript:void(0)">-</a>     
+                     </li>
+                    `
+            );
+          }, "");
+        }
+        // 存储列表的数量
+        todocount.textContent = list.todolist.length;
+        donecount.textContent = list.donelist.length;
+      }
+    </script>
+  </body>
+</html>
